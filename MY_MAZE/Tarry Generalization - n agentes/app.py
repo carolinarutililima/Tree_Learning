@@ -1,7 +1,5 @@
 import numpy as np
 from pyamaze import maze,agent,COLOR
-import sys
-import random
 from env import TarryGeneralization
 
 

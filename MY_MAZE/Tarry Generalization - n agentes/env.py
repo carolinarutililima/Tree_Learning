@@ -4,9 +4,9 @@ import sys
 import random
 
 class TarryGeneralization:
-    def __init__(self, maze, colorList, start=None):
+    def __init__(self, maze, n_agents, colorList, start=None):
         self.maze = maze
-        self.numOfAgents = 1
+        self.numOfAgents = n_agents
         self.colorList = colorList
         self.start = start
 
@@ -42,8 +42,8 @@ class TarryGeneralization:
 
         # Show only agent i
         # self.maze.tracePaths([paths[2]], kill=False, delay=100)
-        print(paths)
-        self.maze.tracePath(paths[i], kill=False, delay=50)
+            print(paths)
+            self.maze.tracePath(paths[i], kill=False, delay=50)
         ##self.maze.tracePaths_by_key_press(paths, kill=False)
 
         self.maze.run()
