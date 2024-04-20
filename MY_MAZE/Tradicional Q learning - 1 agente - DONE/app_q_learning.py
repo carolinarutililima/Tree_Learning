@@ -33,8 +33,8 @@ exploration_decay_rate =  0.0001
 
 rewards_all_episodes = []
 
-eligibility = np.zeros(shape=(11, 11, 4)) # change here the dimentions to 201 or 301
-q_table = np.zeros(shape=(11, 11, 4)) # change here the dimentions to 201 or 301
+eligibility = np.zeros(shape=(10, 10, 4)) # change here the dimentions to 201 or 301
+q_table = np.zeros(shape=(10, 10, 4)) # change here the dimentions to 201 or 301
 
 
 

@@ -1,19 +1,14 @@
 import gym
 
-
-
-
-
 class Maze(gym.Env ):
 
     def __init__(self, maze_map, numOfLines, numOfColumns):
         self.MAZE_C = numOfColumns
         self.MAZE_R = numOfLines
-        self.position = (self.MAZE_C, self.MAZE_R)
         self.map_maze = maze_map
 
 
-    def maze_mov(self, action):
+    def maze_mov(self, action, x, y):
 
         def check_movement_in_direction(maze, x, y, direction):
             # Check if the specified direction from the current position (x, y) is open (1) or blocked (0)
@@ -27,49 +22,48 @@ class Maze(gym.Env ):
 
         if action == 0:   # up
             direction = 'N'
-            x_new = self.position[0]-1
-            y_new = self.position[1]
+            x_new = x-1
+            y_new = y
         elif action == 1:   # down
             direction = 'S'
-            x_new = self.position[0]+1
-            y_new = self.position[1]                       
+            x_new = x+1
+            y_new = y                       
         elif action == 2:   # right
             direction = 'E'
-            x_new = self.position[0]
-            y_new = self.position[1]+1  
+            x_new = x
+            y_new = y+1  
         elif action == 3:   # left
             direction = 'W'
-            x_new = self.position[0] 
-            y_new = self.position[1]-1   
+            x_new = x 
+            y_new = y-1   
 
-        x = self.position[0]
-        y = self.position[1]
+        print("new", x_new, y_new)
 
         movement_result = check_movement_in_direction(self.map_maze, x, y, direction)
         if movement_result == 1:
-            self.position = (x_new,y_new)
+            x, y = x_new,y_new
         else:
-            self.position = (self.MAZE_C+1,self.MAZE_R+1)
+            x,y = (self.MAZE_C,self.MAZE_R)
 
-        print("actual postion", self.position)
-        return self.position
+        print("actual postion", x,y)
+        return (x,y)
 
 
 
 
     def reset(self):
-        self.position =  (self.MAZE_C,self.MAZE_R)
-        return self.position
+        return (self.MAZE_C, self.MAZE_R)
     
 
-    def step(self, action):
+    def step(self, action, x, y):
         print("The action was:", action)
+        print("current position", x,y)
         done = False 
-        current_value = self.maze_mov(action)
+        current_value = self.maze_mov(action, x, y)
 
         print("valor atual p reward", current_value)
         # reward function
-        if current_value == (self.MAZE_C+1,self.MAZE_R+1):
+        if current_value == (self.MAZE_C,self.MAZE_R):
             # hit the wall
             reward = -1
             done = True
