@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 
 
-n_agents = 2
+n_agents = 3
 
 numOfLines = 5
 numOfColumns = 5
@@ -22,12 +22,13 @@ state_shape = (2,)  # Assuming each state vector has 4 elements
 state = np.zeros((n_agents,) + state_shape, dtype=int)  # Create a 2D array to store states
 
 
+colorList = [COLOR.red, COLOR.blue, COLOR.yellow, COLOR.cyan, COLOR.black]
+shapeList = ['arrow', 'square', 'arrow', 'square' ]
 
 for i in range(0, n_agents):
 	character = chr(97 + i)
-	character = agent(m, footprints=True,color='green',shape='arrow')
+	character = agent(m, footprints=True,color=colorList[i],shape=shapeList[i])
 	agents.append(character)
-	state[i] = env.reset()
 
 #a = agent(m, footprints=True,color='green',shape='arrow')
 
@@ -38,7 +39,7 @@ for i in range(0, n_agents):
 
 
 #num_episodes = 10000
-num_episodes = 1000
+num_episodes = 5000
 #max_steps_per_episode = 100
 max_steps_per_episode = 100
 
@@ -137,6 +138,7 @@ for episode in range(num_episodes):
 
 
 
+print(best_path)
 
 dict_agents = {}
 

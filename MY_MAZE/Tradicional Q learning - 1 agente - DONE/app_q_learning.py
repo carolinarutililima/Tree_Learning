@@ -98,7 +98,7 @@ rewards_per_thousand_episodes = np.split(np.array(rewards_all_episodes),num_epis
 count = 1000
 
 
-
+print(best_path)
 
 m.tracePath({a:min(best_path)},delay=200,kill=True)
 m.run()
