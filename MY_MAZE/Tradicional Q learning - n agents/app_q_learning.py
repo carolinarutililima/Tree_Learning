@@ -118,6 +118,7 @@ for episode in range(num_episodes):
 			if done[i]:
 				if new_state == (1,1): 
 					best_path[i].append(path[i])
+					print("agente", i)
 					print("ENCONTROUUUIIIIU")
 				
 				state[i] = (5,5)
@@ -136,11 +137,13 @@ for episode in range(num_episodes):
 
 
 
-print(best_path)
+
+dict_agents = {}
 
 for i in range(0, n_agents):
-	m.tracePath({agents[i]:min(best_path[i])},delay=200,kill=True)
-	m.run()
+    dict_agents[agents[i]] = min(best_path[i])
 
 
+m.tracePath(dict_agents, delay=200,kill=True)
 m.run()
+
