@@ -39,7 +39,7 @@ for i in range(0, n_agents):
 
 
 #num_episodes = 10000
-num_episodes = 5000
+num_episodes = 3000
 #max_steps_per_episode = 100
 max_steps_per_episode = 100
 
