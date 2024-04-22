@@ -91,51 +91,78 @@ class MyAlgorithm:
     def run_single_agent(self, agentInterval, agentIndex):
         explored = [self.start]
         mySearch = []
+
         parentList = []
-        parentList.append((-1, -1))
+        parentList.append((-1,-1))
         currCell = self.start
         agent_path = []
         effective_path = []
 
         # Some agents will not find the goal because
-        # currently the algorithm has a stop condition 
+        # currently the algorithm has a stop condition
         foundTheGoal = False
 
         while True:
-            action = self.choose_action(currCell)  # Choose action based on the current state
-            nextCell = self.get_next_state(currCell, action)  # This needs to be implemented
 
-            reward = self.calculate_reward(currCell, nextCell)  # Calculate reward, this needs to be implemented
-            self.update_Q(currCell, action, reward, nextCell)  # Update the Q-table with the new knowledge
-
-            currCell = nextCell  # Update current state to the next state
-            mySearch.append(currCell)
-            effective_path.append(currCell)
-
-            if currCell == self.maze._goal:
+            if currCell==self.maze._goal:
+                mySearch.append(currCell)
+                effective_path.append(currCell)
                 foundTheGoal = True
                 break
 
-            # Check if there are no non-visited children
+            # If there are not non-visited children, go to parent
             nonVisitedChildren, allChildren = self.getChildrenPoints(currCell, self.maze.maze_map[currCell], parentList[-1], explored)
-            if not nonVisitedChildren:
+            count_nonVisitedChildren = len(nonVisitedChildren)
+            if count_nonVisitedChildren == 0:
                 if currCell not in explored:
                     explored.append(currCell)
 
+                mySearch.append(currCell)
+
+                # Stop condition
                 if currCell == self.start:
                     break
-
+                
                 currCell = parentList.pop()
                 effective_path.pop()
+                agent_path.pop()
+
                 continue
 
-            parentList.append(currCell)
+            # Define the next step to the agent
+            # If next == -1, go to parent
+            next = self.defineAgentNextStep(agentInterval, agent_path, allChildren, nonVisitedChildren, currCell, agentIndex)
+            if next == -1:
+                if currCell not in explored:
+                    explored.append(currCell)
+
+                mySearch.append(currCell)
+
+                if currCell != self.start:
+                    currCell = parentList.pop()
+                    effective_path.pop()
+                    agent_path.pop()
+
+                continue
+            
+            childCellPoint = allChildren[next]
 
             if currCell not in explored:
                 explored.append(currCell)
 
-        return mySearch, effective_path, explored, foundTheGoal
+            parentList.append(currCell)
+            mySearch.append(currCell)
+            effective_path.append(currCell)
+            if childCellPoint=='N':
+                currCell = (currCell[0]-1,currCell[1])
+            elif childCellPoint=='E':
+                currCell = (currCell[0],currCell[1]+1)
+            elif childCellPoint=='S':
+                currCell = (currCell[0]+1,currCell[1])     
+            elif childCellPoint=='W':
+                currCell = (currCell[0],currCell[1]-1)
 
+        return mySearch, effective_path, explored, foundTheGoal
 
     # Return children's cardinal points in preferential order 
     def getChildrenPoints(self, cellCoordinate, cellPoints, parent, explored):
