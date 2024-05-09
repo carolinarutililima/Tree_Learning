@@ -8,9 +8,10 @@ colorList = [COLOR.red, COLOR.blue, COLOR.yellow, COLOR.cyan, COLOR.black]
 
 numOfLines = 5
 numOfColumns = 5
-n_agents = 1
+n_agents = 2
 m=maze(numOfLines, numOfColumns)
 m.CreateMaze(loadMaze= 'maze_5x5.csv' ,theme=COLOR.light)
+
 
 
 
