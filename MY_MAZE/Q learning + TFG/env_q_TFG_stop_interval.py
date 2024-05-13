@@ -15,6 +15,7 @@ class MyAlgorithm:
         self.epsilon = 0.1  # Exploration rate
         self.actions = ['N', 'E', 'S', 'W']  # Possible actions
         self.compass = ['N', 'E', 'S', 'W']  # Defining compass to be used in getChildrenPoints
+        self.filledInterval = [False for i in range(n_agents)]
 
 
     def choose_action(self, state, agent_index):
@@ -72,7 +73,7 @@ class MyAlgorithm:
         for i in range(0, self.numOfAgents):
             start = i * division
             end = (i + 1) * division
-            agentInterval = (start, end)
+            agentInterval = (0.5, 1.0)
             agentColor = self.colorList[i % len(self.colorList)]
 
             # Run the algorithm for each agent
@@ -116,57 +117,72 @@ class MyAlgorithm:
         return totalSteps, pionner_steps, fraction, fraction_pionner
 
 
+    # Run the algorithm for a single agent
     def run_single_agent(self, agentInterval, agentIndex):
-        currCell = self.start
-        foundTheGoal = False
-        mySearch = [currCell]  # Start with the initial position
-        effective_path = [currCell]
-        explored = [currCell]
+        explored = [self.start]
+        mySearch = []
+
         parentList = []
         parentList.append((-1,-1))
-        
-        while not foundTheGoal:
-            action = self.choose_action(currCell, agentIndex)
-            nextCell = self.get_next_state(currCell, action)
-            reward, is_terminal = self.calculate_reward(currCell, nextCell)
+        currCell = self.start
+        agent_path = []
+        effective_path = []
 
-            # Update Q-values
-            self.update_Q(currCell, action, reward, nextCell, agentIndex)
+        # Some agents will not find the goal because
+        # currently the algorithm has a stop condition
+        foundTheGoal = False
+        while True:
 
-            # Stop if hit a wall (nextCell didn't change)
-            if nextCell == currCell:
-                print(f"Hit a wall at {nextCell} with action {action}")
+            if currCell==self.maze._goal:
+                mySearch.append(currCell)
+                effective_path.append(currCell)
+                foundTheGoal = True
                 break
 
-            # Update the current cell and paths
-            currCell = nextCell
-            mySearch.append(currCell)
-            effective_path.append(currCell)
-            explored.append(currCell)
-
-            if is_terminal:
-                foundTheGoal = True
-
-       # return mySearch, effective_path, explored, foundTheGoal
-
-
-                # Check if there are no non-visited children
+            # If there are not non-visited children, go to parent
             nonVisitedChildren, allChildren = self.getChildrenPoints(currCell, self.maze.maze_map[currCell], parentList[-1], explored)
-            if not nonVisitedChildren:
+            count_nonVisitedChildren = len(nonVisitedChildren)
+            
+            
+            if count_nonVisitedChildren == 0:
                 if currCell not in explored:
                     explored.append(currCell)
 
+                mySearch.append(currCell)
+
+                # Stop condition
                 if currCell == self.start:
                     break
-
+                
                 currCell = parentList.pop()
                 effective_path.pop()
+                agent_path.pop()
+
                 continue
 
-            parentList.append(currCell)
+            # Define the next step to the agent
+            # If next == -1, go to parent
+            next, interval_finished = self.defineAgentNextStep(agentInterval, agent_path, allChildren, nonVisitedChildren, currCell, agentIndex)
+            if interval_finished:
+                print("Agent has completed its interval or no more moves left.")
+                break  # Exit the loop if finished or no valid moves
+            
+            childCellPoint = allChildren[next]
 
             if currCell not in explored:
                 explored.append(currCell)
+
+            parentList.append(currCell)
+            mySearch.append(currCell)
+            effective_path.append(currCell)
+            if childCellPoint=='N':
+                currCell = (currCell[0]-1,currCell[1])
+            elif childCellPoint=='E':
+                currCell = (currCell[0],currCell[1]+1)
+            elif childCellPoint=='S':
+                currCell = (currCell[0]+1,currCell[1])     
+            elif childCellPoint=='W':
+                currCell = (currCell[0],currCell[1]-1)
 
         return mySearch, effective_path, explored, foundTheGoal
 
@@ -252,52 +268,46 @@ class MyAlgorithm:
 
         return nonVisitedChildren, allChildren
 
-    # If there is child to visit, this function will decide what child to visit
-    # This function doesn't work if there is no child to visit
     def defineAgentNextStep(self, agentInterval, agent_path, allChildren, nonVisitedChildren, currCell, agentIndex):
-
         totalNumberOfChildren = len(allChildren)
         
-        # If there is only 1 child just go on
-        if totalNumberOfChildren == 1:
-            agent_path.append((-1, -1))
-            return 0
-        
-        # Get the weight interval of each child
+        # No children to visit indicates a stop condition potentially
+        if totalNumberOfChildren == 0:
+            return None, True  # No moves possible, stop the agent
+
+        # Gather weights for node intervals
         relative_node_weights = self.getRelativeNodeWeights(agent_path, totalNumberOfChildren)
 
+        # Try to find a child within the agent's interval that has not been visited
+        for i in range(totalNumberOfChildren):
+            nodeIsInsideAgentInterval = agentInterval[0] < relative_node_weights[i][1] and agentInterval[1] > relative_node_weights[i][0]
+            nodeWasNotVisitedByTheAgent = allChildren[i] in nonVisitedChildren
+            
+            if nodeIsInsideAgentInterval and nodeWasNotVisitedByTheAgent:
+                agent_path.append((i, totalNumberOfChildren))
+                return i, False  # Found a valid move within the interval, continue
 
-        if self.filledInterval[agentIndex] == False:
-            # Return the first child that is able to obey the limits
-            for i in range(0, totalNumberOfChildren):
+        # If no unvisited children within the interval, and if agentInterval enforcement is strict:
+        if all(child in nonVisitedChildren for child in allChildren):
+            # All possible children are visited or outside the interval
+            return None, True  # No valid moves within interval, stop
 
-                # If the current child's interval is on the right of the agent's interval, surely the agent finished its interval
-                if agentInterval[1] <= relative_node_weights[i][0]:
-                    self.filledInterval[agentIndex] = True
-                    break
-
-                nodeIsInsideAgentInterval = agentInterval[0] < relative_node_weights[i][1] and agentInterval[1] > relative_node_weights[i][0]
-                nodeWasNotVisistedByTheAgent = allChildren[i] in nonVisitedChildren
-
-                if nodeIsInsideAgentInterval and nodeWasNotVisistedByTheAgent:
-                    agent_path.append((i, totalNumberOfChildren))
-                    return i
-
-            # If the agent is in the root and it doesn't find a node that fills the requirement, it finished its interval
-            # It occurs when the agent come back to root but it has already been visited the root's children
-            # In the context of this Bachelor's thesis, the agent will stop
-            if currCell == self.start:
-                self.filledInterval[agentIndex] = True
-
-            # If the agent doesn't finish its interval and no node that fills the requirement was found, it goes to parent
-            if self.filledInterval[agentIndex] == False:
-                return -1
-                    
-        # The agent surely finished its interval, and it will do a dummy DFS
-        for i in range(0, totalNumberOfChildren):
+        # Optional: if agent should continue until no moves are left at all
+        for i in range(totalNumberOfChildren):
             if allChildren[i] in nonVisitedChildren:
                 agent_path.append((i, totalNumberOfChildren))
-                return i
+                return i, False  # Continue exploring outside the interval
+
+        # No valid moves left, and the agent is at the start or cannot backtrack further
+        if currCell == self.start or len(agent_path) == 0:
+            return None, True  # Finished, no more moves possible
+
+        # Default action if trapped
+        return -1, False  # Default to backtrack if nothing else is possible
+
+
+
+
 
     def getRelativeNodeWeights(self, agent_path, count_children):
 

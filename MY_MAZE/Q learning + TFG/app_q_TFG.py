@@ -1,6 +1,7 @@
 import numpy as np
 from pyamaze import maze,agent,COLOR
-from env_q_TFG import MyAlgorithm
+from env_q_TFG_goback_begging import MyAlgorithm
+#from env_q_TFG_old import MyAlgorithm
 
 
 # List of colors of the agents
