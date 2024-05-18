@@ -1,6 +1,6 @@
 import numpy as np
 from pyamaze import maze,agent,COLOR
-from env_q_TFG_goback_begging import MyAlgorithm
+from env_q_TFG_goback_begging_v1 import MyAlgorithm
 #from env_q_TFG_old import MyAlgorithm
 
 
@@ -9,7 +9,7 @@ colorList = [COLOR.red, COLOR.blue, COLOR.yellow, COLOR.cyan, COLOR.black]
 
 numOfLines = 5
 numOfColumns = 5
-n_agents = 2
+n_agents = 1
 m=maze(numOfLines, numOfColumns)
 m.CreateMaze(loadMaze= 'maze_5x5.csv' ,theme=COLOR.light)
 
