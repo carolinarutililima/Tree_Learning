@@ -58,12 +58,35 @@ class MyAlgorithm:
 
         self.Q[state_index[0], state_index[1], agent_index, action_index] = new_Q
 
-    def update_Q_before(self, currCell, explored):
+    def update_Q_before(self, state, explored, agentIndex, action, next_state):
         
-        count = explored.count(currCell)
+        count = explored.count(state)
         
         if count == 1: 
-            pass
+            # Adjust indices for zero-based indexing
+            state_index = (state[0] - 1, state[1] - 1)
+            next_state_index = (next_state[0] - 1, next_state[1] - 1)
+            action_index = self.actions.index(action)
+
+            current_Q = self.Q[state_index[0], state_index[1], agentIndex, action_index]
+            max_future_Q = np.max(self.Q[next_state_index[0], next_state_index[1], agentIndex])
+
+            reward = len(explored) * -100
+
+            # Additional debugging and assertions to pinpoint the error
+            print(f"Current Q: {current_Q}, Max Future Q: {max_future_Q}, Reward: {reward}")
+
+            future_value = self.discount_rate * max_future_Q
+            assert np.isscalar(future_value), "Future value must be a scalar"
+
+            learning_term = self.learning_rate * (reward + future_value)
+            assert np.isscalar(learning_term), "Learning term must be a scalar"
+
+            new_Q = (1 - self.learning_rate) * current_Q + learning_term
+            assert np.isscalar(new_Q), "new_Q must be a scalar"
+
+            self.Q[state_index[0], state_index[1], agentIndex, action_index] = new_Q
+           
         else:
             pass
 
@@ -87,18 +110,19 @@ class MyAlgorithm:
         for i in range(0, self.numOfAgents):
             start = i * division
             end = (i + 1) * division
+           # agentInterval = (start, end)
             agentInterval = (0.5, 1.0)
             agentColor = self.colorList[i % len(self.colorList)]
 
             # Run the algorithm for each agent
-            mySearch, explored_cells, foundTheGoal = self.run_single_agent(agentInterval, i)
+            mySearch, effective_path, explored_cells, foundTheGoal = self.run_single_agent(agentInterval, i)
 
 
             self.concatenate_new_elements(explored, explored_cells)
 
             a = agent(self.maze,footprints=True,color=agentColor,shape='square',filled=True)
 
-            paths.append({a:mySearch})
+            paths.append({a:effective_path})
             agents_search.append(mySearch)
 
             # Number of steps of the agent. Subtract 1 to consider that the first cell is not countable
@@ -137,12 +161,12 @@ class MyAlgorithm:
     def run_single_agent(self, agentInterval, agentIndex):
         explored = [self.start]
         mySearch = []
-
+        start = self.start
         parentList = []
         parentList.append((-1,-1))
         currCell = self.start
         agent_path = []
-        effective_path = []
+
 
         # Some agents will not find the goal because
         # currently the algorithm has a stop condition
@@ -151,7 +175,6 @@ class MyAlgorithm:
 
             if currCell==self.maze._goal:
                 mySearch.append(currCell)
-                effective_path.append(currCell)
                 foundTheGoal = True
                 break
 
@@ -169,7 +192,6 @@ class MyAlgorithm:
                     break
                 
                 currCell = parentList.pop()
-                effective_path.pop()
                 agent_path.pop()
 
                 continue
@@ -177,9 +199,8 @@ class MyAlgorithm:
             # Define the next step to the agent
             # If next == -1, go to parent
             next, interval_finished = self.defineAgentNextStep(agentInterval, agent_path, allChildren, nonVisitedChildren, currCell, agentIndex)
-
-            self.update_Q_before(currCell, explored)
-
+            
+            
             if next == -1:
                 if currCell not in explored:
                     explored.append(currCell)
@@ -188,10 +209,10 @@ class MyAlgorithm:
 
                 if currCell != self.start:
                     currCell = parentList.pop()
-                    effective_path.pop()
                     agent_path.pop()
 
                 continue
+
             elif interval_finished == True:
                 break
             
@@ -200,10 +221,10 @@ class MyAlgorithm:
             if currCell not in explored:
                 explored.append(currCell)
 
+            oldCell = copy.deepcopy(currCell) 
 
             parentList.append(currCell)
             mySearch.append(currCell)
-            effective_path.append(currCell)
             if childCellPoint=='N':
                 currCell = (currCell[0]-1,currCell[1])
             elif childCellPoint=='E':
@@ -212,26 +233,28 @@ class MyAlgorithm:
                 currCell = (currCell[0]+1,currCell[1])     
             elif childCellPoint=='W':
                 currCell = (currCell[0],currCell[1]-1)
-        
-        excluded = copy.deepcopy(explored) 
-        excluded.pop(0)
 
+            self.update_Q_before(oldCell, explored, agentIndex, childCellPoint, currCell)
+
+         
         # Beginning of Q-learning
-        num_episodes = 10
+        num_episodes = 10000
         exploration_rate = 1
         max_exploration_rate = 1
         min_exploration_rate = 0.01
         exploration_decay_rate =  0.0001
         max_steps_per_episode = 100
+        effective_path = copy.deepcopy(mySearch) 
 
         for episode in range(num_episodes):
+            q_path = [] 
 
             reward_current_episode = 0
 
             for step in range(max_steps_per_episode):
                 
                 action = self.choose_action(currCell, agentIndex, exploration_rate)
-                nextCell = self.get_next_state(currCell, action, excluded)
+                nextCell = self.get_next_state(currCell, action)
                 reward, is_terminal = self.calculate_reward(currCell, nextCell)
 
                 # Update Q-values
@@ -242,13 +265,14 @@ class MyAlgorithm:
 
                 # Stop if hit a wall (nextCell didn't change)
                 if nextCell == currCell:
-                    print(f"Hit a wall at {nextCell} with action {action}")
+                    print(f"Hit a wall at {nextCell} with action {action}, go back to {start}")
+                    currCell = start
                     break
 
                 # Update the current cell and paths
                 currCell = nextCell
+                q_path.append(currCell)
                 mySearch.append(currCell)
-                effective_path.append(currCell)
                 explored.append(currCell)
 
                 if is_terminal:
@@ -262,7 +286,11 @@ class MyAlgorithm:
             if is_terminal:
                 foundTheGoal = True 
                 break
-        return mySearch, explored, foundTheGoal
+
+        effective_path = effective_path + q_path    
+        print("q_path", q_path)
+        
+        return mySearch, effective_path, explored, foundTheGoal
 
     def calculate_reward(self, current, next_state):
         if current == next_state:  # No movement occurred, hit a wall
@@ -273,7 +301,7 @@ class MyAlgorithm:
 
     
 
-    def get_next_state(self, current, action, excluded):
+    def get_next_state(self, current, action):
 
         def check_movement_in_direction(maze, x, y, direction):
             # Check if the specified direction from the current position (x, y) is open (1) or blocked (0)
@@ -300,7 +328,7 @@ class MyAlgorithm:
 
         movement_result = check_movement_in_direction(self.maze_map, x, y, action)
     
-        if movement_result == 1 and next_state not in excluded:
+        if movement_result == 1:
             return next_state
         else:
             return current  # If calculated next state is still out of bounds, revert to current
@@ -373,7 +401,6 @@ class MyAlgorithm:
         for i in range(totalNumberOfChildren):
             nodeIsInsideAgentInterval = agentInterval[0] < relative_node_weights[i][1] and agentInterval[1] > relative_node_weights[i][0]
             nodeWasNotVisitedByTheAgent = allChildren[i] in nonVisitedChildren
-            
             if nodeIsInsideAgentInterval and nodeWasNotVisitedByTheAgent:
                 agent_path.append((i, totalNumberOfChildren))
                 return i, False  # Found a valid move within the interval, continue
