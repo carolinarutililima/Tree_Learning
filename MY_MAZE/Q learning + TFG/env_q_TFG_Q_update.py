@@ -2,32 +2,37 @@ import numpy as np
 from pyamaze import maze,agent,COLOR
 import sys
 import random
+import copy
 
 class MyAlgorithm:
-    def __init__(self, maze, n_agents, colorList, start=None):
+    def __init__(self, maze, n_agents, maze_map, colorList, start=None):
         self.maze = maze
+        self.maze_map = maze_map
         self.numOfAgents = n_agents
         self.colorList = colorList
         self.start = start if start is not None else (maze.rows, maze.cols)
         self.Q = np.zeros((maze.rows, maze.cols, n_agents,  4))  # Initialize Q-table with dimensions for each cell and action
-        self.alpha = 0.1  # Learning rate
-        self.gamma = 0.9  # Discount factor
-        self.epsilon = 0.1  # Exploration rate
+        self.learning_rate = 0.1  # Learning rate
+        self.discount_rate = 0.9  # Discount factor
+        self.lamb = 0.1  # Exploration rate
         self.actions = ['N', 'E', 'S', 'W']  # Possible actions
-        self.compass = ['N', 'E', 'S', 'W']  # Defining compass to be used in getChildrenPoints
         self.filledInterval = [False for i in range(n_agents)]
 
 
-    def choose_action(self, state, agent_index):
-        if np.random.rand() < self.epsilon:
-            # Explore: Randomly choose an action
-            return np.random.choice(self.actions)
-        else:
+    def choose_action(self, state, agent_index, exploration_rate):
+
+        exploration_rate_treseshold = random.uniform(0,1)
+        if exploration_rate_treseshold > exploration_rate:
             # Exploit: Choose the best action based on the current Q-table
             # Adjust state indices for 0-based indexing
+            print("FOI AQQIIIII")
             state_index = (state[0] - 1, state[1] - 1)
             # Select action with the highest Q-value for the given agent and state
             return self.actions[np.argmax(self.Q[state_index[0], state_index[1], agent_index])]
+        else:
+            # Explore: Randomly choose an action
+            return np.random.choice(self.actions)
+
 
         
 
@@ -43,13 +48,13 @@ class MyAlgorithm:
         # Additional debugging and assertions to pinpoint the error
         print(f"Current Q: {current_Q}, Max Future Q: {max_future_Q}, Reward: {reward}")
 
-        future_value = self.gamma * max_future_Q
+        future_value = self.discount_rate * max_future_Q
         assert np.isscalar(future_value), "Future value must be a scalar"
 
-        learning_term = self.alpha * (reward + future_value)
+        learning_term = self.learning_rate * (reward + future_value)
         assert np.isscalar(learning_term), "Learning term must be a scalar"
 
-        new_Q = (1 - self.alpha) * current_Q + learning_term
+        new_Q = (1 - self.learning_rate) * current_Q + learning_term
         assert np.isscalar(new_Q), "new_Q must be a scalar"
 
         self.Q[state_index[0], state_index[1], agent_index, action_index] = new_Q
@@ -196,42 +201,80 @@ class MyAlgorithm:
                 currCell = (currCell[0]+1,currCell[1])     
             elif childCellPoint=='W':
                 currCell = (currCell[0],currCell[1]-1)
+        
+        excluded = copy.deepcopy(explored) 
+        excluded.pop(0)
+        print(excluded)
 
-        while not foundTheGoal:
-            
-            action = self.choose_action(currCell, agentIndex)
-            nextCell = self.get_next_state(currCell, action)
-            reward, is_terminal = self.calculate_reward(currCell, nextCell)
+        # Beginning of Q-learning
+        num_episodes = 1000
+        exploration_rate = 1
+        max_exploration_rate = 1
+        min_exploration_rate = 0.01
+        exploration_decay_rate =  0.0001
+        max_steps_per_episode = 100
 
-            # Update Q-values
-            self.update_Q(currCell, action, reward, nextCell, agentIndex)
+        for episode in range(num_episodes):
 
-            # Stop if hit a wall (nextCell didn't change)
-            if nextCell == currCell:
-                print(f"Hit a wall at {nextCell} with action {action}")
-                break
+            reward_current_episode = 0
 
-            # Update the current cell and paths
-            currCell = nextCell
-            mySearch.append(currCell)
-            effective_path.append(currCell)
-            explored.append(currCell)
+            for step in range(max_steps_per_episode):
+                
+                action = self.choose_action(currCell, agentIndex, exploration_rate)
+                nextCell = self.get_next_state(currCell, action, excluded)
+                reward, is_terminal = self.calculate_reward(currCell, nextCell)
+
+                # Update Q-values
+                self.update_Q(currCell, action, reward, nextCell, agentIndex)
+
+
+                reward_current_episode += reward
+
+                # Stop if hit a wall (nextCell didn't change)
+                if nextCell == currCell:
+                    print(f"Hit a wall at {nextCell} with action {action}")
+                    break
+
+                # Update the current cell and paths
+                currCell = nextCell
+                mySearch.append(currCell)
+                effective_path.append(currCell)
+                explored.append(currCell)
+
+                if is_terminal:
+                    foundTheGoal = True 
+                    print("I found the goal")
+                    break
+
+            exploration_rate =  min_exploration_rate + \
+            (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate*episode)
 
             if is_terminal:
-                foundTheGoal = True
-
+                foundTheGoal = True 
+                break
         return mySearch, effective_path, explored, foundTheGoal
 
     def calculate_reward(self, current, next_state):
         if current == next_state:  # No movement occurred, hit a wall
             return -1, False  # Negative reward for hitting a wall, not terminal
-        if next_state == (self.maze.rows, self.maze.cols):  # Check if it's the goal
+        if next_state == (1, 1):  # Check if it's the goal
             return 10, True  # Positive reward for reaching the goal, terminal
         return 0, False  # Standard move with no immediate reward
 
     
 
-    def get_next_state(self, current, action):
+    def get_next_state(self, current, action, excluded):
+
+        def check_movement_in_direction(maze, x, y, direction):
+            # Check if the specified direction from the current position (x, y) is open (1) or blocked (0)
+            # Ensure the cell exists in the maze dictionary and check the specific direction
+            if (x, y) in maze:
+                if direction in maze[(x, y)]:
+                    return maze[(x, y)][direction]
+                else:
+                    return 0  # Assume blocked if the direction is not specified
+            return 0  # Assume blocked if the cell is not in the maze dictionary
+        
         x, y = current
         next_state = current  # Default to current if no valid move is possible
 
@@ -244,8 +287,10 @@ class MyAlgorithm:
         elif action == 'W' and y > 1:
             next_state = (x, y - 1)
 
-        # Final boundary check to catch any remaining issues
-        if 1 <= next_state[0] <= self.maze.rows and 1 <= next_state[1] <= self.maze.cols:
+
+        movement_result = check_movement_in_direction(self.maze_map, x, y, action)
+    
+        if movement_result == 1 and next_state not in excluded:
             return next_state
         else:
             return current  # If calculated next state is still out of bounds, revert to current
@@ -259,7 +304,7 @@ class MyAlgorithm:
     def getChildrenPoints(self, cellCoordinate, cellPoints, parent, explored):
         allChildren = []
         nonVisitedChildren = []
-        for d in self.compass:
+        for d in self.actions:
             if cellPoints[d] == True:
                 if d=='N':
                     childCell = (cellCoordinate[0]-1,cellCoordinate[1])
