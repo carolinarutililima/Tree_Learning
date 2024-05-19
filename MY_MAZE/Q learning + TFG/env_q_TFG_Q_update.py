@@ -25,7 +25,6 @@ class MyAlgorithm:
         if exploration_rate_treseshold > exploration_rate:
             # Exploit: Choose the best action based on the current Q-table
             # Adjust state indices for 0-based indexing
-            print("FOI AQQIIIII")
             state_index = (state[0] - 1, state[1] - 1)
             # Select action with the highest Q-value for the given agent and state
             return self.actions[np.argmax(self.Q[state_index[0], state_index[1], agent_index])]
@@ -59,6 +58,16 @@ class MyAlgorithm:
 
         self.Q[state_index[0], state_index[1], agent_index, action_index] = new_Q
 
+    def update_Q_before(self, currCell, explored):
+        
+        count = explored.count(currCell)
+        
+        if count == 1: 
+            pass
+        else:
+            pass
+
+
 
 
     # Additional methods for exploring the maze and updating Q-values accordingly...
@@ -82,7 +91,7 @@ class MyAlgorithm:
             agentColor = self.colorList[i % len(self.colorList)]
 
             # Run the algorithm for each agent
-            mySearch, effective_path, explored_cells, foundTheGoal = self.run_single_agent(agentInterval, i)
+            mySearch, explored_cells, foundTheGoal = self.run_single_agent(agentInterval, i)
 
 
             self.concatenate_new_elements(explored, explored_cells)
@@ -168,9 +177,10 @@ class MyAlgorithm:
             # Define the next step to the agent
             # If next == -1, go to parent
             next, interval_finished = self.defineAgentNextStep(agentInterval, agent_path, allChildren, nonVisitedChildren, currCell, agentIndex)
-            print(next)
+
+            self.update_Q_before(currCell, explored)
+
             if next == -1:
-                print("ok")
                 if currCell not in explored:
                     explored.append(currCell)
 
@@ -190,6 +200,7 @@ class MyAlgorithm:
             if currCell not in explored:
                 explored.append(currCell)
 
+
             parentList.append(currCell)
             mySearch.append(currCell)
             effective_path.append(currCell)
@@ -204,10 +215,9 @@ class MyAlgorithm:
         
         excluded = copy.deepcopy(explored) 
         excluded.pop(0)
-        print(excluded)
 
         # Beginning of Q-learning
-        num_episodes = 1000
+        num_episodes = 10
         exploration_rate = 1
         max_exploration_rate = 1
         min_exploration_rate = 0.01
@@ -252,7 +262,7 @@ class MyAlgorithm:
             if is_terminal:
                 foundTheGoal = True 
                 break
-        return mySearch, effective_path, explored, foundTheGoal
+        return mySearch, explored, foundTheGoal
 
     def calculate_reward(self, current, next_state):
         if current == next_state:  # No movement occurred, hit a wall
