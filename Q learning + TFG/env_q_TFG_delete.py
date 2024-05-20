@@ -25,15 +25,12 @@ class MyAlgorithm:
         if exploration_rate_treseshold > exploration_rate:
             # Exploit: Choose the best action based on the current Q-table
             # Adjust state indices for 0-based indexing
-            print("FOI AQQIIIII")
             state_index = (state[0] - 1, state[1] - 1)
             # Select action with the highest Q-value for the given agent and state
             return self.actions[np.argmax(self.Q[state_index[0], state_index[1], agent_index])]
         else:
             # Explore: Randomly choose an action
             return np.random.choice(self.actions)
-
-
         
 
     def update_Q(self, state, action, reward, next_state, agent_index):
@@ -207,12 +204,12 @@ class MyAlgorithm:
         print(excluded)
 
         # Beginning of Q-learning
-        num_episodes = 1000
+        num_episodes = 20000
         exploration_rate = 1
         max_exploration_rate = 1
         min_exploration_rate = 0.01
         exploration_decay_rate =  0.0001
-        max_steps_per_episode = 100
+        max_steps_per_episode = 500
 
         for episode in range(num_episodes):
 

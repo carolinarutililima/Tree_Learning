@@ -6,11 +6,12 @@ from env_q_TFG_Q_update import MyAlgorithm
 # List of colors of the agents
 colorList = [COLOR.red, COLOR.blue, COLOR.yellow, COLOR.cyan, COLOR.black]
 
-numOfLines = 5
-numOfColumns = 5
+numOfLines = 6
+numOfColumns = 6
 n_agents = 2
 m=maze(numOfLines, numOfColumns)
-m.CreateMaze(loadMaze= 'maze_5x5.csv', theme=COLOR.light)
+#m.CreateMaze(loadMaze= 'maze_5x5.csv', theme=COLOR.light)
+m.CreateMaze( theme=COLOR.light)
 maze_map = m.maze_map
 
 

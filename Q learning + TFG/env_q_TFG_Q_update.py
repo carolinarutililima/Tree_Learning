@@ -248,7 +248,7 @@ class MyAlgorithm:
 
         if foundTheGoal == False:
             # Beginning of Q-learning
-            num_episodes = 10000
+            num_episodes = 30000
             exploration_rate = 1
             max_exploration_rate = 1
             min_exploration_rate = 0.01
