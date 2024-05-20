@@ -107,13 +107,14 @@ class MyAlgorithm:
         agents_search = []
         pionner_steps = sys.maxsize
         totalSteps = 0
+
+
         for i in range(0, self.numOfAgents):
             start = i * division
             end = (i + 1) * division
-           # agentInterval = (start, end)
-            agentInterval = (0.5, 1.0)
+            agentInterval = (start, end)
+           # agentInterval = (0.5, 1.0)
             agentColor = self.colorList[i % len(self.colorList)]
-
             # Run the algorithm for each agent
             mySearch, effective_path, explored_cells, foundTheGoal = self.run_single_agent(agentInterval, i)
 
@@ -121,6 +122,7 @@ class MyAlgorithm:
             self.concatenate_new_elements(explored, explored_cells)
 
             a = agent(self.maze,footprints=True,color=agentColor,shape='square',filled=True)
+
 
             paths.append({a:effective_path})
             agents_search.append(mySearch)
@@ -134,10 +136,6 @@ class MyAlgorithm:
             # Get the number of the steps of the pionner
             if foundTheGoal == True:
                 pionner_steps = agent_steps if pionner_steps > agent_steps else pionner_steps
-
-            self.maze.tracePath(paths[i], kill=False)
-
-            self.maze.run()
 
 
         # Get the explored fraction of the maze
@@ -153,6 +151,18 @@ class MyAlgorithm:
                     cells.append(e)
         fraction_pionner = len(cells) / (self.maze.rows * self.maze.cols)
 
+
+        agent_path_dict = {}
+        for d in paths:
+            agent_path_dict.update(d)
+
+        print(agent_path_dict)
+       
+       
+        self.maze.tracePath(agent_path_dict, delay=200,kill=True)
+
+
+        self.maze.run()
 
         return totalSteps, pionner_steps, fraction, fraction_pionner
 
@@ -236,60 +246,62 @@ class MyAlgorithm:
 
             self.update_Q_before(oldCell, explored, agentIndex, childCellPoint, currCell)
 
-         
-        # Beginning of Q-learning
-        num_episodes = 10000
-        exploration_rate = 1
-        max_exploration_rate = 1
-        min_exploration_rate = 0.01
-        exploration_decay_rate =  0.0001
-        max_steps_per_episode = 100
-        effective_path = copy.deepcopy(mySearch) 
+        if foundTheGoal == False:
+            # Beginning of Q-learning
+            num_episodes = 10000
+            exploration_rate = 1
+            max_exploration_rate = 1
+            min_exploration_rate = 0.01
+            exploration_decay_rate =  0.0001
+            max_steps_per_episode = 100
+            effective_path = copy.deepcopy(mySearch) 
 
-        for episode in range(num_episodes):
-            q_path = [] 
+            for episode in range(num_episodes):
+                q_path = [] 
 
-            reward_current_episode = 0
+                reward_current_episode = 0
 
-            for step in range(max_steps_per_episode):
-                
-                action = self.choose_action(currCell, agentIndex, exploration_rate)
-                nextCell = self.get_next_state(currCell, action)
-                reward, is_terminal = self.calculate_reward(currCell, nextCell)
+                for step in range(max_steps_per_episode):
+                    
+                    action = self.choose_action(currCell, agentIndex, exploration_rate)
+                    nextCell = self.get_next_state(currCell, action)
+                    reward, is_terminal = self.calculate_reward(currCell, nextCell)
 
-                # Update Q-values
-                self.update_Q(currCell, action, reward, nextCell, agentIndex)
+                    # Update Q-values
+                    self.update_Q(currCell, action, reward, nextCell, agentIndex)
 
 
-                reward_current_episode += reward
+                    reward_current_episode += reward
 
-                # Stop if hit a wall (nextCell didn't change)
-                if nextCell == currCell:
-                    print(f"Hit a wall at {nextCell} with action {action}, go back to {start}")
-                    currCell = start
-                    break
+                    # Stop if hit a wall (nextCell didn't change)
+                    if nextCell == currCell:
+                        print(f"Hit a wall at {nextCell} with action {action}, go back to {start}")
+                        currCell = start
+                        break
 
-                # Update the current cell and paths
-                currCell = nextCell
-                q_path.append(currCell)
-                mySearch.append(currCell)
-                explored.append(currCell)
+                    # Update the current cell and paths
+                    currCell = nextCell
+                    q_path.append(currCell)
+                    mySearch.append(currCell)
+                    explored.append(currCell)
+
+                    if is_terminal:
+                        foundTheGoal = True 
+                        print("I found the goal")
+                        break
+
+                exploration_rate =  min_exploration_rate + \
+                (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate*episode)
 
                 if is_terminal:
                     foundTheGoal = True 
-                    print("I found the goal")
                     break
 
-            exploration_rate =  min_exploration_rate + \
-            (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate*episode)
-
-            if is_terminal:
-                foundTheGoal = True 
-                break
-
-        effective_path = effective_path + q_path    
-        print("q_path", q_path)
-        
+            effective_path = effective_path + q_path    
+            print("q_path", q_path)
+        else: 
+            effective_path = mySearch
+            
         return mySearch, effective_path, explored, foundTheGoal
 
     def calculate_reward(self, current, next_state):

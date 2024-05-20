@@ -10,7 +10,7 @@ numOfLines = 5
 numOfColumns = 5
 n_agents = 2
 m=maze(numOfLines, numOfColumns)
-m.CreateMaze(loadMaze= 'maze_5x5.csv' ,theme=COLOR.light)
+m.CreateMaze(loadMaze= 'maze_5x5.csv', theme=COLOR.light)
 maze_map = m.maze_map
 
 

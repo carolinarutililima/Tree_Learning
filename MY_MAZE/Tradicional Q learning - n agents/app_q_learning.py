@@ -145,6 +145,7 @@ dict_agents = {}
 for i in range(0, n_agents):
     dict_agents[agents[i]] = min(best_path[i])
 
+print(dict_agents)
 
 m.tracePath(dict_agents, delay=200,kill=True)
 m.run()
