@@ -17,6 +17,7 @@ class MyAlgorithm:
         self.lamb = 0.1  # Exploration rate
         self.actions = ['N', 'E', 'S', 'W']  # Possible actions
         self.filledInterval = [False for i in range(n_agents)]
+        self.agent_intervals = [(i / n_agents, (i + 1) / n_agents) for i in range(n_agents)]
 
 
     def choose_action(self, state, agent_index, exploration_rate):
@@ -58,40 +59,43 @@ class MyAlgorithm:
 
         self.Q[state_index[0], state_index[1], agent_index, action_index] = new_Q
 
-    def update_Q_before(self, state, explored, agentIndex, action, next_state):
+    def update_Q_before(self, state, explored, agentIndex, action, next_state, Another_agent):
         
         count = explored.count(state)
-        
+
+        # Adjust indices for zero-based indexing
+        state_index = (state[0] - 1, state[1] - 1)
+        next_state_index = (next_state[0] - 1, next_state[1] - 1)
+        action_index = self.actions.index(action)
+
+        current_Q = self.Q[state_index[0], state_index[1], agentIndex, action_index]
+        max_future_Q = np.max(self.Q[next_state_index[0], next_state_index[1], agentIndex])
+
         if count == 1: 
-            # Adjust indices for zero-based indexing
-            state_index = (state[0] - 1, state[1] - 1)
-            next_state_index = (next_state[0] - 1, next_state[1] - 1)
-            action_index = self.actions.index(action)
-
-            current_Q = self.Q[state_index[0], state_index[1], agentIndex, action_index]
-            max_future_Q = np.max(self.Q[next_state_index[0], next_state_index[1], agentIndex])
-
-            reward = len(explored) * -1
-
-            # Additional debugging and assertions to pinpoint the error
-            print(f"Current Q: {current_Q}, Max Future Q: {max_future_Q}, Reward: {reward}")
-
-            future_value = self.discount_rate * max_future_Q
-            assert np.isscalar(future_value), "Future value must be a scalar"
-
-            learning_term = self.learning_rate * (reward + future_value)
-            assert np.isscalar(learning_term), "Learning term must be a scalar"
-
-            new_Q = (1 - self.learning_rate) * current_Q + learning_term
-            assert np.isscalar(new_Q), "new_Q must be a scalar"
-
-            self.Q[state_index[0], state_index[1], agentIndex, action_index] = new_Q
+            weight = -1
            
-        else:
-            pass
+        elif Another_agent == True:
+            weight = 0.5
+
+        else: 
+            weight = 0
 
 
+        reward = (len(explored) * weight)/4
 
+        # Additional debugging and assertions to pinpoint the error
+        print(f"Current Q: {current_Q}, Max Future Q: {max_future_Q}, Reward: {reward}")
+
+        future_value = self.discount_rate * max_future_Q
+        assert np.isscalar(future_value), "Future value must be a scalar"
+
+        learning_term = self.learning_rate * (reward + future_value)
+        assert np.isscalar(learning_term), "Learning term must be a scalar"
+
+        new_Q = (1 - self.learning_rate) * current_Q + learning_term
+        assert np.isscalar(new_Q), "new_Q must be a scalar"
+
+        self.Q[state_index[0], state_index[1], agentIndex, action_index] = new_Q
 
     # Additional methods for exploring the maze and updating Q-values accordingly...
 
@@ -112,7 +116,7 @@ class MyAlgorithm:
         for i in range(0, self.numOfAgents):
             start = i * division
             end = (i + 1) * division
-            agentInterval =  (0.3333333333333333, 0.6666666666666666) # (0.0, 0.3333333333333333)  (0.3333333333333333, 0.6666666666666666) (0.6666666666666666, 1.0)
+            agentInterval =  (0.0, 0.3333333333333333) # (0.0, 0.3333333333333333)  (0.3333333333333333, 0.6666666666666666) (0.6666666666666666, 1.0)
             #agentInterval = (start, end)
             print(agentInterval)
            # agentInterval = (0.5, 1.0)
@@ -193,6 +197,7 @@ class MyAlgorithm:
 
             # If there are not non-visited children, go to parent
             nonVisitedChildren, allChildren = self.getChildrenPoints(currCell, self.maze.maze_map[currCell], parentList[-1], explored)
+            
             count_nonVisitedChildren = len(nonVisitedChildren)
             if count_nonVisitedChildren == 0:
                 if currCell not in explored:
@@ -209,6 +214,9 @@ class MyAlgorithm:
 
                 continue
 
+            # Check if the current cell belongs to another agent's interval
+            Another_agent = self.does_currcell_belong_to_another_agent_interval(allChildren, agentIndex, agent_path)
+            
             # Define the next step to the agent
             # If next == -1, go to parent
             next = self.defineAgentNextStep(agentInterval, agent_path, allChildren, nonVisitedChildren, currCell, agentIndex)
@@ -246,14 +254,17 @@ class MyAlgorithm:
             elif childCellPoint=='W':
                 currCell = (currCell[0],currCell[1]-1)
 
-            self.update_Q_before(oldCell, explored, agentIndex, childCellPoint, currCell)
+
+            self.update_Q_before(oldCell, explored, agentIndex, childCellPoint, currCell, Another_agent)
 
 
-        print(explored)
+        #print(explored)
 
         if foundTheGoal == False:
+            print("parents", parentList)
+
             # Beginning of Q-learning
-            num_episodes = 10
+            num_episodes = 5
             exploration_rate = 1
             max_exploration_rate = 1
             min_exploration_rate = 0.01
@@ -351,11 +362,17 @@ class MyAlgorithm:
         else:
             return current  # If calculated next state is still out of bounds, revert to current
 
-
-
-
-
-
+    def does_currcell_belong_to_another_agent_interval(self, allChildren, agentIndex, agent_path):
+        totalNumberOfChildren = len(allChildren)
+        relative_node_weights = self.getRelativeNodeWeights(agent_path, totalNumberOfChildren)
+        
+        for i, interval in enumerate(self.agent_intervals):
+            if i != agentIndex:
+                for weight in relative_node_weights:
+                    if interval[0] < weight[1] and interval[1] > weight[0]:
+                        return True
+        return False
+    
     # Return children's cardinal points in preferential order 
     def getChildrenPoints(self, cellCoordinate, cellPoints, parent, explored):
         allChildren = []

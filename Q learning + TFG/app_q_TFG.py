@@ -8,7 +8,7 @@ colorList = [COLOR.red, COLOR.blue, COLOR.yellow, COLOR.cyan, COLOR.black]
 
 numOfLines = 10
 numOfColumns = 10
-n_agents = 1
+n_agents = 3
 m=maze(numOfLines, numOfColumns)
 #m.CreateMaze(theme=COLOR.light, saveMaze='maze_10x10')
 #maze_10x10 maze_8x8 maze_5x5  maze_6x6
