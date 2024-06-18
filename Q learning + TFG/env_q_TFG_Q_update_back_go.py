@@ -18,6 +18,7 @@ class MyAlgorithm:
         self.actions = ['N', 'E', 'S', 'W']  # Possible actions
         self.filledInterval = [False for i in range(n_agents)]
         self.agent_intervals = [(i / n_agents, (i + 1) / n_agents) for i in range(n_agents)]
+        self._agent_done =[False for i in range(n_agents)]
 
 
     def choose_action(self, state, agent_index, exploration_rate):
@@ -71,17 +72,17 @@ class MyAlgorithm:
         current_Q = self.Q[state_index[0], state_index[1], agentIndex, action_index]
         max_future_Q = np.max(self.Q[next_state_index[0], next_state_index[1], agentIndex])
 
-        if count == 1: 
-            weight = -1
+        if count > 1: 
+            weight = -0.5
            
-        elif Another_agent == True:
-            weight = 0.5
+        elif Another_agent  == True:
+            weight = 0.25
 
         else: 
-            weight = 0
+            weight = -0.25
 
 
-        reward = (len(explored) * weight)/4
+        reward = (len(explored) * weight)
 
         # Additional debugging and assertions to pinpoint the error
         print(f"Current Q: {current_Q}, Max Future Q: {max_future_Q}, Reward: {reward}")
@@ -116,10 +117,9 @@ class MyAlgorithm:
         for i in range(0, self.numOfAgents):
             start = i * division
             end = (i + 1) * division
-            agentInterval =  (0.0, 0.3333333333333333) # (0.0, 0.3333333333333333)  (0.3333333333333333, 0.6666666666666666) (0.6666666666666666, 1.0)
-            #agentInterval = (start, end)
+            #agentInterval =  (0.0, 0.25) # (0.0, 0.3333333333333333)  (0.3333333333333333, 0.6666666666666666) (0.6666666666666666, 1.0)
+            agentInterval = (start, end)
             print(agentInterval)
-           # agentInterval = (0.5, 1.0)
             agentColor = self.colorList[i % len(self.colorList)]
             # Run the algorithm for each agent
             mySearch, effective_path, explored_cells, foundTheGoal = self.run_single_agent(agentInterval, i)
@@ -133,6 +133,11 @@ class MyAlgorithm:
             paths.append({a:effective_path})
             agents_search.append(mySearch)
 
+            print("the last", mySearch[-1])
+
+            if mySearch[-1] == (1,1):
+                self._agent_done[i]= True
+            
             # Number of steps of the agent. Subtract 1 to consider that the first cell is not countable
             agent_steps = len(mySearch) - 1
 
@@ -170,7 +175,7 @@ class MyAlgorithm:
        # self.maze.tracePath(paths[0], delay=200,kill=True)
 
         self.maze.run()
-
+        print(self._agent_done)
         return totalSteps, pionner_steps, fraction, fraction_pionner
 
 
@@ -257,14 +262,13 @@ class MyAlgorithm:
 
             self.update_Q_before(oldCell, explored, agentIndex, childCellPoint, currCell, Another_agent)
 
-
+        start = mySearch[-1]
+        print(start)
         #print(explored)
 
         if foundTheGoal == False:
-            print("parents", parentList)
-
             # Beginning of Q-learning
-            num_episodes = 5
+            num_episodes = 60000
             exploration_rate = 1
             max_exploration_rate = 1
             min_exploration_rate = 0.01
