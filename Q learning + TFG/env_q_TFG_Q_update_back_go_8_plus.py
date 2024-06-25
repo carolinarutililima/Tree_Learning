@@ -76,10 +76,10 @@ class MyAlgorithm:
             weight = -0.5
            
         elif Another_agent  == True:
-            weight = 0.1
+            weight = 0.5
 
         else: 
-            weight = -0.1
+            weight = -0.5
 
 
         reward = (len(explored) * weight)
@@ -268,7 +268,7 @@ class MyAlgorithm:
 
         if foundTheGoal == False:
             # Beginning of Q-learning
-            num_episodes = 30000
+            num_episodes = 150000
             exploration_rate = 1
             max_exploration_rate = 1
             min_exploration_rate = 0.01

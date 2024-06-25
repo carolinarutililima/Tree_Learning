@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 
 
-n_agents = 4
+n_agents = 1
 
-numOfLines = 5
-numOfColumns = 5
+numOfLines = 7
+numOfColumns = 7
 m=maze(numOfLines, numOfColumns)
-m.CreateMaze(loadMaze= 'maze_5x5.csv' ,theme=COLOR.light)
+m.CreateMaze(loadMaze= 'maze_7x7.csv' ,theme=COLOR.light)
 agents = []
 
 maze_map = m.maze_map
@@ -39,7 +39,7 @@ for i in range(0, n_agents):
 
 
 #num_episodes = 10000
-num_episodes = 3000
+num_episodes = 10000
 #max_steps_per_episode = 100
 max_steps_per_episode = 100
 
@@ -63,7 +63,7 @@ path = [[] for _ in range(n_agents)]  # Create a list of empty lists for each ag
 best_path =  [[] for _ in range(n_agents)]  
 
 
-end = [[] for _ in range(n_agents)]  # Create a list of empty lists for each agent
+end = [[]]
 
 for episode in range(num_episodes):
 	
@@ -123,8 +123,8 @@ for episode in range(num_episodes):
 					print("agente", i)
 					print("ENCONTROUUUIIIIU")
 				
-				state[i] = (numOfLines,numOfColumns)
-				path[i] = [(numOfLines,numOfColumns)]
+				state[i] = (5,5)
+				path[i] = [(5,5)]
 				break
 			else:
 				state[i] = new_state
