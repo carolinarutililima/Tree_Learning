@@ -9,7 +9,8 @@ class Maze(gym.Env ):
 
 
     def maze_mov(self, action, x, y):
-
+        
+        print(x,y)
         def check_movement_in_direction(maze, x, y, direction):
             # Check if the specified direction from the current position (x, y) is open (1) or blocked (0)
             # Ensure the cell exists in the maze dictionary and check the specific direction

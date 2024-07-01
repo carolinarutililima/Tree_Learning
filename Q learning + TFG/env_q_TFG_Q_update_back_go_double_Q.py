@@ -19,6 +19,7 @@ class MyAlgorithm:
         self.filledInterval = [False for i in range(n_agents)]
         self.agent_intervals = [(i / n_agents, (i + 1) / n_agents) for i in range(n_agents)]
         self._agent_done =[False for i in range(n_agents)]
+        self.Q_hit = np.zeros((maze.rows, maze.cols,  4))  # Initialize Q-table with dimensions for each cell and action
 
 
     def choose_action(self, state, agent_index, exploration_rate):
@@ -43,8 +44,8 @@ class MyAlgorithm:
         next_state_index = (next_state[0] - 1, next_state[1] - 1)
         action_index = self.actions.index(action)
 
-        current_Q = self.Q[state_index[0], state_index[1], agent_index, action_index]
-        max_future_Q = np.max(self.Q[next_state_index[0], next_state_index[1], agent_index])
+        current_Q = self.Q_hit[state_index[0], state_index[1], action_index]
+        max_future_Q = np.max(self.Q_hit[next_state_index[0], next_state_index[1]])
 
         # Additional debugging and assertions to pinpoint the error
         print(f"Current Q: {current_Q}, Max Future Q: {max_future_Q}, Reward: {reward}")
@@ -52,13 +53,15 @@ class MyAlgorithm:
         future_value = self.discount_rate * max_future_Q
         assert np.isscalar(future_value), "Future value must be a scalar"
 
-        learning_term = self.learning_rate * (reward + future_value)
+        learning_term = self.learning_rate * (reward + future_value - current_Q)
         assert np.isscalar(learning_term), "Learning term must be a scalar"
 
-        new_Q = (1 - self.learning_rate) * current_Q + learning_term
+        new_Q = current_Q + learning_term
         assert np.isscalar(new_Q), "new_Q must be a scalar"
 
-        self.Q[state_index[0], state_index[1], agent_index, action_index] = new_Q
+        self.Q_hit[state_index[0], state_index[1], action_index] = new_Q
+
+        self.Q[:, :, agent_index, :] = self.Q_hit
 
     def update_Q_before(self, state, explored, agentIndex, action, next_state, Another_agent):
         
@@ -76,10 +79,10 @@ class MyAlgorithm:
             weight = -0.5
            
         elif Another_agent  == True:
-            weight = 0.5
+            weight = 0.1
 
         else: 
-            weight = -0.5
+            weight = -0.1
 
 
         reward = (len(explored) * weight)
@@ -112,6 +115,7 @@ class MyAlgorithm:
         agents_search = []
         pionner_steps = sys.maxsize
         totalSteps = 0
+        steps_number = []
 
 
         for i in range(0, self.numOfAgents):
@@ -128,12 +132,24 @@ class MyAlgorithm:
             self.concatenate_new_elements(explored, explored_cells)
 
             a = agent(self.maze,footprints=True,color=agentColor,shape='square',filled=True)
+            
+            
+            def process_path(path):
+                processed_path = []
+                for cell in path:
+                    if cell in processed_path:
+                        # Find the first occurrence of the repeated cell and remove all cells up to that point
+                        idx = processed_path.index(cell)
+                        processed_path = processed_path[:idx]
+                    processed_path.append(cell)
+                return processed_path
 
 
-            paths.append({a:effective_path})
+            print(effective_path)
+            paths.append({a:process_path(effective_path)})
             agents_search.append(mySearch)
 
-            print("the last", mySearch[-1])
+            steps_number.append(len(process_path(effective_path)))
 
             if mySearch[-1] == (1,1):
                 self._agent_done[i]= True
@@ -176,6 +192,7 @@ class MyAlgorithm:
 
         self.maze.run()
         print(self._agent_done)
+        print("The steps taken by each agent was:", steps_number)
         return totalSteps, pionner_steps, fraction, fraction_pionner
 
 
@@ -268,7 +285,7 @@ class MyAlgorithm:
 
         if foundTheGoal == False:
             # Beginning of Q-learning
-            num_episodes = 150000
+            num_episodes = 30000
             exploration_rate = 1
             max_exploration_rate = 1
             min_exploration_rate = 0.01

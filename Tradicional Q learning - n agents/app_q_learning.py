@@ -152,3 +152,9 @@ m.tracePath(dict_agents, delay=200,kill=True)
 m.run()
 
 print(end)
+
+# Calculate the number of steps each agent took to reach the goal
+steps_to_goal = [len(min(best_path[i])) for i in range(n_agents)]
+
+for i in range(n_agents):
+    print(f"Agent {i} took {steps_to_goal[i]} steps to reach the goal.")

@@ -112,6 +112,8 @@ class MyAlgorithm:
         agents_search = []
         pionner_steps = sys.maxsize
         totalSteps = 0
+        steps_number = []
+        normal_steps = []
 
 
         for i in range(0, self.numOfAgents):
@@ -128,15 +130,27 @@ class MyAlgorithm:
             self.concatenate_new_elements(explored, explored_cells)
 
             a = agent(self.maze,footprints=True,color=agentColor,shape='square',filled=True)
+            if effective_path[-1] == (1,1):
+                self._agent_done[i]= True           
+            
+            def process_path(path):
+                processed_path = []
+                for cell in path:
+                    if cell in processed_path:
+                        # Find the first occurrence of the repeated cell and remove all cells up to that point
+                        idx = processed_path.index(cell)
+                        processed_path = processed_path[:idx]
+                    processed_path.append(cell)
+                return processed_path
 
-
-            paths.append({a:effective_path})
+            normal_steps.append(len(effective_path))
+            print(effective_path)
+            paths.append({a:process_path(effective_path)})
             agents_search.append(mySearch)
 
-            print("the last", mySearch[-1])
+            steps_number.append(len(process_path(effective_path)))
 
-            if mySearch[-1] == (1,1):
-                self._agent_done[i]= True
+
             
             # Number of steps of the agent. Subtract 1 to consider that the first cell is not countable
             agent_steps = len(mySearch) - 1
@@ -176,6 +190,9 @@ class MyAlgorithm:
 
         self.maze.run()
         print(self._agent_done)
+        print("The steps taken by each agent was:", steps_number)
+        print("The steps taken by each agent was WITH backtracking:", normal_steps)
+
         return totalSteps, pionner_steps, fraction, fraction_pionner
 
 
@@ -268,7 +285,7 @@ class MyAlgorithm:
 
         if foundTheGoal == False:
             # Beginning of Q-learning
-            num_episodes = 30000
+            num_episodes = 50000
             exploration_rate = 1
             max_exploration_rate = 1
             min_exploration_rate = 0.01

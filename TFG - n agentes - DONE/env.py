@@ -14,6 +14,8 @@ class MyAlgorithm:
         self.gamma = 0.9  # Discount factor
         self.epsilon = 0.1  # Exploration rate
         self.actions = ['N', 'E', 'S', 'W']  # Possible actions
+        self.compass = "NESW" # it establishes the children's storage order
+        self.filledInterval = [False for i in range(n_agents)]
 
     def choose_action(self, state):
         if np.random.rand() < self.epsilon:
@@ -41,6 +43,8 @@ class MyAlgorithm:
         agents_search = []
         pionner_steps = sys.maxsize
         totalSteps = 0
+        steps_number = []
+
         for i in range(0, self.numOfAgents):
             start = i * division
             end = (i + 1) * division
@@ -53,8 +57,11 @@ class MyAlgorithm:
 
             a = agent(self.maze,footprints=True,color=agentColor,shape='square',filled=True)
 
+
             paths.append({a:mySearch})
             agents_search.append(mySearch)
+
+            steps_number.append(len(mySearch))
 
             # Number of steps of the agent. Subtract 1 to consider that the first cell is not countable
             agent_steps = len(mySearch) - 1
@@ -66,9 +73,9 @@ class MyAlgorithm:
             if foundTheGoal == True:
                 pionner_steps = agent_steps if pionner_steps > agent_steps else pionner_steps
 
-            self.maze.tracePath(paths[i], kill=False)
+            #self.maze.tracePath(paths[i], kill=False)
 
-            self.maze.run()
+            #self.maze.run()
 
 
         # Get the explored fraction of the maze
@@ -84,8 +91,10 @@ class MyAlgorithm:
                     cells.append(e)
         fraction_pionner = len(cells) / (self.maze.rows * self.maze.cols)
 
-
+        self.maze.run()
+        print("The steps taken by each agent was:", steps_number)
         return totalSteps, pionner_steps, fraction, fraction_pionner
+
 
     # Run the algorithm for a single agent
     def run_single_agent(self, agentInterval, agentIndex):
