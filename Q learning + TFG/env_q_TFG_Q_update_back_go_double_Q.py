@@ -61,7 +61,7 @@ class MyAlgorithm:
 
         self.Q_hit[state_index[0], state_index[1], action_index] = new_Q
 
-        self.Q[:, :, agent_index, :] = self.Q_hit
+        self.Q[:, :, agent_index, :] = self.Q[:, :, agent_index, :] + self.Q_hit
 
     def update_Q_before(self, state, explored, agentIndex, action, next_state, Another_agent):
         
@@ -116,6 +116,8 @@ class MyAlgorithm:
         pionner_steps = sys.maxsize
         totalSteps = 0
         steps_number = []
+        normal_steps = []
+
 
 
         for i in range(0, self.numOfAgents):
@@ -144,7 +146,7 @@ class MyAlgorithm:
                     processed_path.append(cell)
                 return processed_path
 
-
+            normal_steps.append(len(effective_path))
             print(effective_path)
             paths.append({a:process_path(effective_path)})
             agents_search.append(mySearch)
@@ -193,6 +195,8 @@ class MyAlgorithm:
         self.maze.run()
         print(self._agent_done)
         print("The steps taken by each agent was:", steps_number)
+        print("The steps taken by each agent was WITH backtracking:", normal_steps)
+
         return totalSteps, pionner_steps, fraction, fraction_pionner
 
 
